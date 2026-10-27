@@ -8,30 +8,15 @@ import {
   useRef,
   useState,
 } from "react";
-
-/* =========================
-   TYPES
-========================= */
-
-export type Product = {
-  id: number;
-  name: string;
-  price: number;
-  image: string[];
-  description: string;
-};
-
-export type CartItem = Product & {
-  size: string;
-  quantity: number;
-};
+import type { CartItem, ProductSizeValue } from "@/lib/types";
 
 type CartType = {
   cart: CartItem[];
   addToCart: (product: Omit<CartItem, "quantity">) => void;
-  removeFromCart: (id: number, size: string) => void;
-  increaseQty: (id: number, size: string) => void;
-  decreaseQty: (id: number, size: string) => void;
+  removeFromCart: (id: string, size: ProductSizeValue) => void;
+  increaseQty: (id: string, size: ProductSizeValue) => void;
+  decreaseQty: (id: string, size: ProductSizeValue) => void;
+  clearCart: () => void;
   totalItems: number;
   isCartOpen: boolean;
   openCart: () => void;
@@ -43,6 +28,73 @@ type CartType = {
 ========================= */
 
 const CartContext = createContext<CartType | null>(null);
+
+function normalizeLegacyCartItem(item: unknown): CartItem | null {
+  if (!item || typeof item !== "object") {
+    return null;
+  }
+
+  const candidate = item as {
+    id?: unknown;
+    slug?: unknown;
+    name?: unknown;
+    price?: unknown;
+    image?: unknown;
+    images?: unknown;
+    description?: unknown;
+    size?: unknown;
+    quantity?: unknown;
+    sizes?: unknown;
+  };
+
+  const images = Array.isArray(candidate.images)
+    ? candidate.images
+    : Array.isArray(candidate.image)
+      ? candidate.image
+      : [];
+
+  if (
+    (typeof candidate.id !== "string" && typeof candidate.id !== "number") ||
+    typeof candidate.name !== "string" ||
+    typeof candidate.price !== "number" ||
+    !Number.isSafeInteger(candidate.price) ||
+    candidate.price < 0 ||
+    typeof candidate.description !== "string" ||
+    typeof candidate.size !== "string" ||
+    typeof candidate.quantity !== "number" ||
+    !Number.isSafeInteger(candidate.quantity) ||
+    candidate.quantity < 1 ||
+    candidate.quantity > 99 ||
+    images.some((entry) => typeof entry !== "string")
+  ) {
+    return null;
+  }
+
+  const normalizedSize = candidate.size as ProductSizeValue;
+
+  if (!["S", "M", "L", "XL"].includes(normalizedSize)) {
+    return null;
+  }
+
+  return {
+    id: String(candidate.id),
+    slug:
+      typeof candidate.slug === "string"
+        ? candidate.slug
+        : String(candidate.name).toLowerCase().replace(/\s+/g, "-"),
+    name: candidate.name,
+    price: candidate.price,
+    description: candidate.description,
+    images,
+    sizes: Array.isArray(candidate.sizes)
+      ? (candidate.sizes.filter((entry): entry is ProductSizeValue =>
+          typeof entry === "string" && ["S", "M", "L", "XL"].includes(entry)
+        ) as ProductSizeValue[])
+      : ["S", "M", "L", "XL"],
+    size: normalizedSize,
+    quantity: candidate.quantity,
+  };
+}
 
 /* =========================
    PROVIDER
@@ -60,18 +112,25 @@ export function CartProvider({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const saved = localStorage.getItem("cart");
-    if (!saved) {
-      hasLoadedRef.current = true;
-      return;
-    }
-
     try {
-      const parsed = JSON.parse(saved) as CartItem[];
-      setTimeout(() => {
-        setCart(parsed);
+      const saved = localStorage.getItem("cart");
+      if (!saved) {
+        hasLoadedRef.current = true;
+        return;
+      }
+
+      const parsed = JSON.parse(saved) as unknown[];
+      const normalized = Array.isArray(parsed)
+        ? parsed
+            .map((item) => normalizeLegacyCartItem(item))
+            .filter((item): item is CartItem => item !== null)
+        : [];
+
+      const restoreTimer = window.setTimeout(() => {
+        setCart(normalized);
         hasLoadedRef.current = true;
       }, 0);
+      return () => window.clearTimeout(restoreTimer);
     } catch {
       hasLoadedRef.current = true;
     }
@@ -83,7 +142,11 @@ export function CartProvider({
   useEffect(() => {
     if (typeof window === "undefined" || !hasLoadedRef.current) return;
 
-    localStorage.setItem("cart", JSON.stringify(cart));
+    try {
+      localStorage.setItem("cart", JSON.stringify(cart));
+    } catch {
+      // Keep checkout usable if browser storage is unavailable or full.
+    }
   }, [cart]);
 
   /* =========================
@@ -107,7 +170,7 @@ export function CartProvider({
       if (exist) {
         return prev.map(item =>
           item.id === product.id && item.size === product.size
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: Math.min(item.quantity + 1, 99) }
             : item
         );
       }
@@ -119,7 +182,7 @@ export function CartProvider({
   /* =========================
      REMOVE
   ========================== */
-  const removeFromCart = (id: number, size: string) => {
+  const removeFromCart = (id: string, size: ProductSizeValue) => {
     setCart(prev =>
       prev.filter(item => !(item.id === id && item.size === size))
     );
@@ -128,11 +191,11 @@ export function CartProvider({
   /* =========================
      INCREASE
   ========================== */
-  const increaseQty = (id: number, size: string) => {
+  const increaseQty = (id: string, size: ProductSizeValue) => {
     setCart(prev =>
       prev.map(item =>
         item.id === id && item.size === size
-          ? { ...item, quantity: item.quantity + 1 }
+          ? { ...item, quantity: Math.min(item.quantity + 1, 99) }
           : item
       )
     );
@@ -141,7 +204,7 @@ export function CartProvider({
   /* =========================
      DECREASE
   ========================== */
-  const decreaseQty = (id: number, size: string) => {
+  const decreaseQty = (id: string, size: ProductSizeValue) => {
     setCart(prev =>
       prev
         .map(item =>
@@ -161,6 +224,7 @@ export function CartProvider({
         removeFromCart,
         increaseQty,
         decreaseQty,
+        clearCart: () => setCart([]),
         totalItems,
         isCartOpen,
         openCart: () => setIsCartOpen(true),

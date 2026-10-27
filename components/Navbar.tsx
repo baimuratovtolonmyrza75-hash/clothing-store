@@ -8,6 +8,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import CartDrawer from "./CartDrawer";
 import MenuDrawer from "./MenuDrawer";
 import CartCounter from "./CartCounter";
+import type { AuthUser } from "@/lib/auth/auth";
 
 function InstagramIcon() {
   return (
@@ -35,7 +36,7 @@ function TikTokIcon() {
   );
 }
 
-export default function Navbar() {
+export default function Navbar({ user }: { user: AuthUser | null }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { totalItems, isCartOpen, openCart, closeCart } = useCart();
   const { language, setLanguage } = useLanguage();
@@ -71,6 +72,13 @@ export default function Navbar() {
         </Link>
 
         <div className="flex items-center gap-6">
+          <Link
+            href={user ? "/account" : "/sign-in"}
+            className="text-sm font-semibold tracking-wider"
+          >
+            {user ? "ACCOUNT" : "SIGN IN"}
+          </Link>
+
           <div className="flex gap-2 text-xs font-semibold">
             <button
               onClick={() => setLanguage("kg")}
@@ -153,7 +161,7 @@ export default function Navbar() {
         }`}
       />
 
-      <MenuDrawer open={menuOpen} setOpen={setMenuOpen} />
+      <MenuDrawer open={menuOpen} setOpen={setMenuOpen} user={user} />
       <CartDrawer
         open={isCartOpen}
         setOpen={(v) => (v ? openCart() : closeCart())}

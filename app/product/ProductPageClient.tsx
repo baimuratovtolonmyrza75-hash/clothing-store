@@ -1,41 +1,35 @@
 "use client";
 
-import { useParams } from "next/navigation";
 import Image from "next/image";
 import { useState } from "react";
-import { products } from "@/data/products";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { formatPrice } from "@/lib/currency";
+import type { CatalogProduct } from "@/lib/types";
 
-export default function ProductPage() {
-  const params = useParams();
+type ProductPageClientProps = {
+  product: CatalogProduct;
+};
+
+export default function ProductPageClient({ product }: ProductPageClientProps) {
   const { addToCart, openCart } = useCart();
   const { showToast } = useToast();
   const { language, t } = useLanguage();
 
-  const [size, setSize] = useState<string | null>(null);
+  const [size, setSize] = useState<CatalogProduct["sizes"][number] | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isAdding, setIsAdding] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-
-  const id = Array.isArray(params.id) ? params.id[0] : params.id;
-  const product = products.find((p) => p.id === Number(id));
-
-  if (!product) {
-    return <div className="p-10 text-center">Product not found</div>;
-  }
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) =>
-      prev === 0 ? product.image.length - 1 : prev - 1
+      prev === 0 ? product.images.length - 1 : prev - 1
     );
   };
 
   const handleNextImage = () => {
     setCurrentImageIndex((prev) =>
-      prev === product.image.length - 1 ? 0 : prev + 1
+      prev === product.images.length - 1 ? 0 : prev + 1
     );
   };
 
@@ -45,17 +39,11 @@ export default function ProductPage() {
       return;
     }
 
-    setIsAdding(true);
-
-    setTimeout(() => {
-      addToCart({ ...product, size });
-      openCart();
-      setIsAdding(false);
-      setShowConfirm(true);
-      showToast(t("added"), "success");
-
-      setTimeout(() => setShowConfirm(false), 2000);
-    }, 600);
+    addToCart({ ...product, size });
+    openCart();
+    setShowConfirm(true);
+    showToast(t("added"), "success");
+    window.setTimeout(() => setShowConfirm(false), 2000);
   };
 
   return (
@@ -65,7 +53,7 @@ export default function ProductPage() {
           <div className="aspect-[3/4] overflow-hidden bg-gray-100 rounded-lg">
             <div className="relative w-full h-full">
               <Image
-                src={product.image[currentImageIndex]}
+                src={product.images[currentImageIndex] || "/oimo-logo.svg"}
                 alt={product.name}
                 fill
                 sizes="(min-width: 768px) 50vw, 100vw"
@@ -74,7 +62,7 @@ export default function ProductPage() {
             </div>
           </div>
 
-          {product.image.length > 1 && (
+          {product.images.length > 1 && (
             <>
               <button
                 onClick={handlePrevImage}
@@ -91,9 +79,9 @@ export default function ProductPage() {
             </>
           )}
 
-          {product.image.length > 1 && (
+          {product.images.length > 1 && (
             <div className="flex gap-2 mt-4 justify-center">
-              {product.image.map((_, index) => (
+              {product.images.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentImageIndex(index)}
@@ -114,36 +102,31 @@ export default function ProductPage() {
           <p className="mb-8 text-sm text-gray-600">{product.description}</p>
 
           <div className="flex gap-3 mb-8">
-            {["S", "M", "L", "XL"].map((s) => (
-              <button
-                key={s}
-                onClick={() => setSize(s)}
-                className={`border px-5 py-2 transition ${
-                  size === s
-                    ? "bg-black text-white"
-                    : "border-black hover:bg-black hover:text-white"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
+            {product.sizes.length > 0 ? (
+              product.sizes.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSize(s)}
+                  className={`border px-5 py-2 transition ${
+                    size === s
+                      ? "bg-black text-white"
+                      : "border-black hover:bg-black hover:text-white"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))
+            ) : (
+              <p className="text-sm text-neutral-500">{t("outOfStock")}</p>
+            )}
           </div>
 
           <button
             onClick={handleAddToCart}
-            disabled={!size || isAdding}
-            className={`border border-black px-8 py-4 font-semibold transition disabled:opacity-40 relative overflow-hidden ${
-              isAdding ? "bg-black text-white" : "hover:bg-black hover:text-white"
-            }`}
+            disabled={!size}
+            className="border border-black px-8 py-4 font-semibold transition disabled:opacity-40 relative overflow-hidden hover:bg-black hover:text-white"
           >
-            {isAdding ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                {t("adding")}
-              </span>
-            ) : (
-              t("addToCart")
-            )}
+            {t("addToCart")}
           </button>
 
           {showConfirm && (

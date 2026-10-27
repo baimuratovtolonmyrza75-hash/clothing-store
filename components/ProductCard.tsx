@@ -2,19 +2,19 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Product } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { formatPrice } from "@/lib/currency";
+import type { CatalogProduct } from "@/lib/types";
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({ product }: { product: CatalogProduct }) {
   const { language } = useLanguage();
 
   return (
-    <Link href={`/product/${product.id}`} className="block group">
+    <Link href={`/product/${product.slug}`} className="block group">
       <div className="w-full">
         <div className="relative aspect-[3/4] overflow-hidden cursor-pointer bg-gray-100">
           <Image
-            src={product.image[0]}
+            src={product.images[0] || "/oimo-logo.svg"}
             alt={product.name}
             fill
             sizes="(min-width: 768px) 25vw, 50vw"

@@ -1,15 +1,12 @@
 import { Language } from "./i18n";
 
 export function formatPrice(price: number, language: Language): string {
-  const locales = {
-    kg: "ky-KG",
-    ru: "ru-KG",
-    en: "en-KG",
-  };
+  const rounded = Math.round(price);
+  const grouped = rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
-  return new Intl.NumberFormat(locales[language], {
-    style: "currency",
-    currency: "KGS",
-    maximumFractionDigits: 0,
-  }).format(price);
+  if (language === "en") {
+    return `${grouped} KGS`;
+  }
+
+  return `${grouped} сом`;
 }

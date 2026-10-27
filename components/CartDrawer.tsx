@@ -32,7 +32,7 @@ export default function CartDrawer({
       />
 
       <div
-        className={`fixed right-0 top-0 h-screen w-96 bg-white z-50 transform transition-transform duration-300 overflow-y-auto ${
+        className={`fixed right-0 top-0 h-dvh w-full max-w-sm bg-white z-50 transform transition-transform duration-300 overflow-y-auto ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -56,7 +56,7 @@ export default function CartDrawer({
                   <div className="flex gap-4">
                     <div className="relative w-20 h-20 rounded overflow-hidden">
                       <Image
-                        src={item.image[0]}
+                        src={item.images[0] || "/oimo-logo.svg"}
                         alt={item.name}
                         fill
                         sizes="80px"

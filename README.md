@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OIMO Clothing Store
 
-## Getting Started
+OIMO is a Next.js storefront with a product catalog, cart, checkout, customer accounts, and an admin area.
 
-First, run the development server:
+## Run locally
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env` and set a long, private `AUTH_SECRET`.
+3. Initialize the local SQLite database and add the starter catalog:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+   ```bash
+   npm run db:generate
+   npm run db:init
+   npm run db:seed
+   ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+4. Start the site with `npm run dev`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create an account, then promote it to administrator with `npm run make-admin -- your@email.com`.
 
-## Learn More
+## Orders
 
-To learn more about Next.js, take a look at the following resources:
+Checkout saves an order using prices and stock from the database, then opens a prefilled Telegram or WhatsApp message. The customer reviews the message and sends it from the messenger. The public contact settings are `NEXT_PUBLIC_TELEGRAM_USERNAME` and `NEXT_PUBLIC_WHATSAPP_NUMBER`; they default to the OIMO contacts supplied for this store.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Online payment is disabled. Administrators can update order and manually recorded payment statuses from the admin area.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Storage before deployment
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The example configuration uses SQLite, and product uploads are written to `public/images/uploads`. Choose persistent database and image storage before deploying to a host whose application filesystem is temporary or shared across multiple instances.

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { AuthUser } from "@/lib/auth/auth";
 
 function InstagramIcon() {
   return (
@@ -31,9 +32,11 @@ function TikTokIcon() {
 export default function MenuDrawer({
   open,
   setOpen,
+  user,
 }: {
   open: boolean;
   setOpen: (v: boolean) => void;
+  user: AuthUser | null;
 }) {
   return (
     <div
@@ -47,10 +50,13 @@ export default function MenuDrawer({
 
       <div className="h-[calc(100%-72px)] flex flex-col">
         <div className="flex flex-col gap-8 p-10 text-2xl tracking-widest">
-          <Link href="/shop">SHOP</Link>
-          <Link href="/archive">ARCHIVE</Link>
-          <Link href="/about">ABOUT</Link>
-          <Link href="/contact">CONTACT</Link>
+          <Link href="/shop" onClick={() => setOpen(false)}>SHOP</Link>
+          <Link href="/archive" onClick={() => setOpen(false)}>ARCHIVE</Link>
+          <Link href="/about" onClick={() => setOpen(false)}>ABOUT</Link>
+          <Link href="/contact" onClick={() => setOpen(false)}>CONTACT</Link>
+          <Link href={user ? "/account" : "/sign-in"} onClick={() => setOpen(false)}>
+            {user ? "ACCOUNT" : "SIGN IN"}
+          </Link>
         </div>
 
         <div className="mt-auto p-6 border-t border-black/10 flex items-center gap-3">

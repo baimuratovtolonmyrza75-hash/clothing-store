@@ -4,24 +4,29 @@ import Navbar from "@/components/Navbar";
 import { CartProvider } from "@/context/CartContext";
 import ToastProvider from "@/context/ToastContext";
 import LanguageProvider from "@/context/LanguageContext";
+import { getCurrentUser } from "@/lib/auth/auth";
+import { getServerLanguage } from "@/lib/language";
 
 export const metadata: Metadata = {
   title: "OIMO - Fashion Store",
   description: "Modern minimalist clothing store",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await getCurrentUser();
+  const language = await getServerLanguage();
+
   return (
-    <html lang="en">
+    <html lang={language === "kg" ? "ky" : language}>
       <body>
         <CartProvider>
-          <LanguageProvider>
+          <LanguageProvider initialLanguage={language}>
             <ToastProvider>
-              <Navbar />
+              <Navbar user={user} />
               {children}
             </ToastProvider>
           </LanguageProvider>

@@ -4,7 +4,6 @@ import {
   createContext,
   useContext,
   useEffect,
-  useRef,
   useState,
   ReactNode,
 } from "react";
@@ -18,28 +17,22 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-export default function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>("kg");
-  const hasLoadedRef = useRef(false);
+export default function LanguageProvider({
+  children,
+  initialLanguage,
+}: {
+  children: ReactNode;
+  initialLanguage: Language;
+}) {
+  const [language, setLanguage] = useState<Language>(initialLanguage);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const saved = localStorage.getItem("language");
-    if (saved === "kg" || saved === "ru" || saved === "en") {
-      setTimeout(() => {
-        setLanguage(saved);
-        hasLoadedRef.current = true;
-      }, 0);
-      return;
+    try {
+      localStorage.setItem("language", language);
+      document.cookie = `language=${language}; path=/; max-age=31536000; samesite=lax`;
+    } catch {
+      // The language still works for this session if browser storage is unavailable.
     }
-
-    hasLoadedRef.current = true;
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !hasLoadedRef.current) return;
-    localStorage.setItem("language", language);
   }, [language]);
 
   const t = (key: keyof typeof translations.ru) => {

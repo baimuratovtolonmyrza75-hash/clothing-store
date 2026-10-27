@@ -1,31 +1,34 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-import { useCart } from "@/context/CartContext";
-import { useLanguage } from "@/context/LanguageContext";
+import Link from "next/link";
 import { formatPrice } from "@/lib/currency";
-import { useId } from "react";
+import { getOrderByNumber } from "@/lib/server/orders";
+import { translations } from "@/lib/i18n";
+import { getServerLanguage } from "@/lib/language";
 
-export default function OrderConfirmationPage() {
-  const router = useRouter();
-  const { cart } = useCart();
-  const { language, t } = useLanguage();
-  const orderId = useId().replace(/:/g, "").toUpperCase();
-  const orderNumber = `ORD-${orderId}`;
+type OrderConfirmationPageProps = {
+  searchParams: Promise<{
+    order?: string;
+  }>;
+};
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+export default async function OrderConfirmationPage({
+  searchParams,
+}: OrderConfirmationPageProps) {
+  const { order } = await searchParams;
+  const placedOrder = order ? await getOrderByNumber(order) : null;
+  const language = await getServerLanguage();
+  const t = translations[language];
 
-  if (cart.length === 0) {
+  if (!placedOrder) {
     return (
       <main className="min-h-screen bg-white text-black p-10 flex items-center justify-center">
         <div className="text-center">
-          <p className="mb-4">{t("cartEmpty")}</p>
-          <button
-            onClick={() => router.push("/")}
+          <p className="mb-4">{t.orderNotFound}</p>
+          <Link
+            href="/"
             className="border border-black px-6 py-3 hover:bg-black hover:text-white transition"
           >
-            {t("continueShopping")}
-          </button>
+            {t.continueShopping}
+          </Link>
         </div>
       </main>
     );
@@ -53,37 +56,37 @@ export default function OrderConfirmationPage() {
         </div>
 
         <div>
-          <h1 className="text-4xl font-bold mb-2">{t("thanksForOrder")}</h1>
-          <p className="text-gray-600 text-lg">{t("orderSuccess")}</p>
+          <h1 className="text-4xl font-bold mb-2">{t.thanksForOrder}</h1>
+          <p className="text-gray-600 text-lg">{t.orderSuccess}</p>
         </div>
 
         <div className="bg-gray-50 border border-black p-8 space-y-4 rounded">
           <div>
-            <p className="text-sm text-gray-600 mb-1">{t("orderNumber")}</p>
-            <p className="text-2xl font-bold font-mono">{orderNumber}</p>
+            <p className="text-sm text-gray-600 mb-1">{t.orderNumber}</p>
+            <p className="text-2xl font-bold font-mono">{placedOrder.orderNumber}</p>
           </div>
 
           <div className="border-t pt-4">
-            <p className="text-sm text-gray-600 mb-1">{t("total")}</p>
-            <p className="text-3xl font-bold">{formatPrice(total, language)}</p>
+            <p className="text-sm text-gray-600 mb-1">{t.total}</p>
+            <p className="text-3xl font-bold">{formatPrice(placedOrder.totalAmount, language)}</p>
           </div>
 
           <div className="border-t pt-4">
-            <p className="text-sm text-gray-600 mb-2">{t("orderSummary")}</p>
+            <p className="text-sm text-gray-600 mb-2">{t.orderSummary}</p>
             <div className="space-y-2 text-left">
-              {cart.map((item) => (
+              {placedOrder.items.map((item) => (
                 <div
-                  key={`${item.id}-${item.size}`}
+                  key={item.id}
                   className="flex justify-between items-center py-2 border-b"
                 >
                   <div>
-                    <p className="font-semibold">{item.name}</p>
+                    <p className="font-semibold">{item.productName}</p>
                     <p className="text-xs text-gray-600">
-                      {t("size")}: {item.size} | {t("quantity")}: {item.quantity}
+                      {t.size}: {item.size} | {t.quantity}: {item.quantity}
                     </p>
                   </div>
                   <p className="font-semibold">
-                    {formatPrice(item.price * item.quantity, language)}
+                    {formatPrice(item.lineTotal, language)}
                   </p>
                 </div>
               ))}
@@ -92,22 +95,22 @@ export default function OrderConfirmationPage() {
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm text-gray-500">{t("shipmentInfo")}</p>
+          <p className="text-sm text-gray-500">{t.shipmentInfo}</p>
         </div>
 
         <div className="space-y-3 pt-4">
-          <button
-            onClick={() => router.push("/")}
+          <Link
+            href="/"
             className="w-full bg-black text-white py-4 font-semibold hover:bg-gray-800 transition rounded"
           >
-            {t("continueButton")}
-          </button>
-          <button
-            onClick={() => window.print()}
-            className="w-full border border-black py-4 font-semibold hover:bg-black hover:text-white transition rounded"
+            {t.continueButton}
+          </Link>
+          <Link
+            href="/account"
+            className="block w-full border border-black py-4 text-center font-semibold hover:bg-black hover:text-white transition rounded"
           >
-            {t("printOrder")}
-          </button>
+            {t.authAccount}
+          </Link>
         </div>
       </div>
     </main>
